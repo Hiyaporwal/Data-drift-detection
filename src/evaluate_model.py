@@ -38,7 +38,7 @@ results = []
 # Evaluate all windows
 # --------------------------------------------------
 
-for window in range(1, 6):
+for window in range(1, 7):
 
     print(f"\n=== Window {window} ===")
 

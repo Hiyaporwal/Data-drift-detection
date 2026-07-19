@@ -1,0 +1,6 @@
+method,precision,recall_TPR,false_positive_rate,overall_accuracy,n_observations
+Classifier_RF,1.0,0.667,0.0,0.75,24
+KS,1.0,0.667,0.0,0.75,24
+Classifier_LR,1.0,0.556,0.0,0.667,24
+KL,1.0,0.167,0.0,0.375,48
+PSI,1.0,0.167,0.0,0.375,48

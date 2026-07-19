@@ -127,7 +127,7 @@ def log_artifacts():
 def main():
     mlflow.set_experiment(EXPERIMENT_NAME)
 
-    with mlflow.start_run(run_name="full_pipeline_run") as run:
+    with mlflow.start_run(run_name="full_pipeline_run_with_window6") as run:
         print(f"Started MLflow run: {run.info.run_id}")
 
         log_params_and_config(run)

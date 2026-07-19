@@ -42,7 +42,7 @@ from drift_detectors import (
 # ---------------------------------------------------------------------------
 # CONFIG -- tweak these to control the experiment
 # ---------------------------------------------------------------------------
-N_WINDOWS = 6                     # must match what you used in data_prep.py
+N_WINDOWS = 7                    # must match what you used in data_prep.py
 REFERENCE_WINDOW_PATH = "data/window_0.csv"
 
 NUMERIC_COL_FOR_COVARIATE_DRIFT = "age"
