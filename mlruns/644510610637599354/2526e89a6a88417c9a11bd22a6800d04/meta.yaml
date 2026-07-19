@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/saksh/OneDrive/Documents/DATA_DRIFT_DETECTOR/mlruns/644510610637599354/2526e89a6a88417c9a11bd22a6800d04/artifacts
+end_time: 1784487938457
+entry_point_name: ''
+experiment_id: '644510610637599354'
+lifecycle_stage: active
+run_id: 2526e89a6a88417c9a11bd22a6800d04
+run_name: full_pipeline_run
+run_uuid: 2526e89a6a88417c9a11bd22a6800d04
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1784487937341
+status: 3
+tags: []
+user_id: saksh
