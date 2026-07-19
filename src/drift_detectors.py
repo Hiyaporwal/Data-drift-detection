@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ks_2samp
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
@@ -127,13 +129,24 @@ def calculate_kl_divergence(reference: pd.Series, comparison: pd.Series, buckets
 # ---------------------------------------------------------------------------
 def classifier_drift_detector(reference_df: pd.DataFrame, comparison_df: pd.DataFrame,
                                feature_cols: list, auc_threshold: float = 0.6,
-                               random_state: int = 42):
+                               random_state: int = 42, model_type: str = "random_forest"):
     """
     Trains a classifier to distinguish 'old' (reference) vs 'new' (comparison)
     rows using the given feature columns.
     If the classifier can tell them apart well (AUC well above 0.5), the
     underlying data distribution has shifted -> drift.
     AUC ~0.5 = can't tell them apart = no drift.
+
+    model_type:
+        "random_forest"      -> RandomForestClassifier (captures non-linear,
+                                 interaction-based drift; needs no feature scaling)
+        "logistic_regression" -> LogisticRegression (a simpler, linear baseline;
+                                 features are standardized first since LR is
+                                 sensitive to feature scale)
+
+    Comparing both variants side-by-side is a nice angle for your paper --
+    it shows whether a simple linear model is "good enough" to catch drift,
+    or whether you genuinely need a non-linear model like Random Forest.
     """
     ref = reference_df[feature_cols].copy()
     comp = comparison_df[feature_cols].copy()
@@ -143,10 +156,9 @@ def classifier_drift_detector(reference_df: pd.DataFrame, comparison_df: pd.Data
 
     combined = pd.concat([ref, comp], axis=0, ignore_index=True)
 
-    # One-hot encode any categorical columns so RandomForest can use them
-    combined = pd.get_dummies(combined, columns=[
-        c for c in feature_cols if not pd.api.types.is_numeric_dtype(combined[c])
-    ])
+    # One-hot encode any categorical columns so both models can use them
+    categorical_cols = [c for c in feature_cols if not pd.api.types.is_numeric_dtype(combined[c])]
+    combined = pd.get_dummies(combined, columns=categorical_cols)
 
     X = combined.drop(columns="__label__")
     y = combined["__label__"]
@@ -155,14 +167,31 @@ def classifier_drift_detector(reference_df: pd.DataFrame, comparison_df: pd.Data
         X, y, test_size=0.3, random_state=random_state, stratify=y
     )
 
-    clf = RandomForestClassifier(n_estimators=100, random_state=random_state, max_depth=6)
-    clf.fit(X_train, y_train)
+    if model_type == "random_forest":
+        clf = RandomForestClassifier(n_estimators=100, random_state=random_state, max_depth=6)
+        clf.fit(X_train, y_train)
+        y_proba = clf.predict_proba(X_test)[:, 1]
+        method_name = "Classifier_RF"
 
-    y_proba = clf.predict_proba(X_test)[:, 1]
+    elif model_type == "logistic_regression":
+        # Logistic Regression is sensitive to feature scale, so we standardize
+        # first (fit the scaler on training data only, to avoid leakage).
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        clf = LogisticRegression(max_iter=1000, random_state=random_state)
+        clf.fit(X_train_scaled, y_train)
+        y_proba = clf.predict_proba(X_test_scaled)[:, 1]
+        method_name = "Classifier_LR"
+
+    else:
+        raise ValueError(f"Unknown model_type: {model_type!r}. Use 'random_forest' or 'logistic_regression'.")
+
     auc = roc_auc_score(y_test, y_proba)
 
     return {
-        "method": "Classifier",
+        "method": method_name,
         "score": float(auc),         # 0.5 = indistinguishable, 1.0 = perfectly distinguishable
         "drifted": bool(auc > auc_threshold),
     }
@@ -198,4 +227,5 @@ if __name__ == "__main__":
 
     print("\n=== classifier-based (multi-feature) ===")
     numeric_cols = ["age", "hours.per.week", "capital.gain", "capital.loss"]
-    print(classifier_drift_detector(ref_df, comp_df, numeric_cols))
+    print(classifier_drift_detector(ref_df, comp_df, numeric_cols, model_type="random_forest"))
+    print(classifier_drift_detector(ref_df, comp_df, numeric_cols, model_type="logistic_regression"))
