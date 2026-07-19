@@ -52,7 +52,7 @@ def calculate_psi(reference: pd.Series, comparison: pd.Series, buckets: int = 10
     comparison = comparison.dropna()
 
     # If categorical, treat each category as its own bucket
-    if reference.dtype == object or str(reference.dtype).startswith("category"):
+    if not pd.api.types.is_numeric_dtype(reference):
         categories = set(reference.unique()) | set(comparison.unique())
         ref_counts = reference.value_counts(normalize=True).reindex(categories, fill_value=0)
         comp_counts = comparison.value_counts(normalize=True).reindex(categories, fill_value=0)
@@ -96,7 +96,7 @@ def calculate_kl_divergence(reference: pd.Series, comparison: pd.Series, buckets
     reference = reference.dropna()
     comparison = comparison.dropna()
 
-    if reference.dtype == object or str(reference.dtype).startswith("category"):
+    if not pd.api.types.is_numeric_dtype(reference):
         categories = set(reference.unique()) | set(comparison.unique())
         p = reference.value_counts(normalize=True).reindex(categories, fill_value=0)
         q = comparison.value_counts(normalize=True).reindex(categories, fill_value=0)
@@ -145,7 +145,7 @@ def classifier_drift_detector(reference_df: pd.DataFrame, comparison_df: pd.Data
 
     # One-hot encode any categorical columns so RandomForest can use them
     combined = pd.get_dummies(combined, columns=[
-        c for c in feature_cols if combined[c].dtype == object
+        c for c in feature_cols if not pd.api.types.is_numeric_dtype(combined[c])
     ])
 
     X = combined.drop(columns="__label__")
@@ -176,7 +176,7 @@ def run_all_detectors_on_column(reference_df, comparison_df, column):
     comp_col = comparison_df[column]
 
     results = [
-        ks_test_drift(ref_col, comp_col) if ref_col.dtype != object else None,
+        ks_test_drift(ref_col, comp_col) if pd.api.types.is_numeric_dtype(ref_col) else None,
         calculate_psi(ref_col, comp_col),
         calculate_kl_divergence(ref_col, comp_col),
     ]
