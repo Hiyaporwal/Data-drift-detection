@@ -14,6 +14,7 @@ database second.
 """
 
 import os
+import json
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, text
@@ -61,20 +62,25 @@ def log_prediction(model_name: str, input_features: dict, prediction: str, predi
         print("[db] Skipping prediction log -- no DATABASE_URL set.")
         return
 
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-                INSERT INTO predictions (timestamp, model_name, input_features, prediction, prediction_proba)
-                VALUES (:ts, :model_name, :features, :prediction, :proba)
-            """),
-            {
-                "ts": datetime.now(timezone.utc),
-                "model_name": model_name,
-                "features": input_features,
-                "prediction": prediction,
-                "proba": prediction_proba,
-            },
-        )
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO predictions (timestamp, model_name, input_features, prediction, prediction_proba)
+                    VALUES (:ts, :model_name, CAST(:features AS JSONB), :prediction, :proba)
+                """),
+                {
+                    "ts": datetime.now(timezone.utc),
+                    "model_name": model_name,
+                    "features": json.dumps(input_features),
+                    "prediction": prediction,
+                    "proba": prediction_proba,
+                },
+            )
+        print("[db] Prediction logged successfully.")
+    except Exception as e:
+        print(f"[db] ERROR logging prediction: {e}")
+        raise
 
 
 def log_drift_check(window_label: str, method: str, column_checked: str, score: float, drifted: bool):
@@ -82,21 +88,26 @@ def log_drift_check(window_label: str, method: str, column_checked: str, score: 
         print("[db] Skipping drift check log -- no DATABASE_URL set.")
         return
 
-    with engine.begin() as conn:
-        conn.execute(
-            text("""
-                INSERT INTO drift_checks (timestamp, window_label, method, column_checked, score, drifted)
-                VALUES (:ts, :window_label, :method, :column_checked, :score, :drifted)
-            """),
-            {
-                "ts": datetime.now(timezone.utc),
-                "window_label": window_label,
-                "method": method,
-                "column_checked": column_checked,
-                "score": score,
-                "drifted": drifted,
-            },
-        )
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO drift_checks (timestamp, window_label, method, column_checked, score, drifted)
+                    VALUES (:ts, :window_label, :method, :column_checked, :score, :drifted)
+                """),
+                {
+                    "ts": datetime.now(timezone.utc),
+                    "window_label": window_label,
+                    "method": method,
+                    "column_checked": column_checked,
+                    "score": score,
+                    "drifted": drifted,
+                },
+            )
+        print(f"[db] Drift check ({method}) logged successfully.")
+    except Exception as e:
+        print(f"[db] ERROR logging drift check: {e}")
+        raise
 
 
 def fetch_recent_predictions(limit: int = 50):
