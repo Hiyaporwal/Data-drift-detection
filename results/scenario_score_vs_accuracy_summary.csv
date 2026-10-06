@@ -1,9 +1,9 @@
 scenario,drift_score,accuracy_drop,detector
-concept_education,0.5149,0.0546,Classifier_RF
-covariate_age,0.909,0.0196,Classifier_RF
-label_income,0.6215,0.1207,Classifier_RF
-no_drift,0.5149,0.0066,Classifier_RF
-concept_education,0.0484,0.0546,Autoencoder
-covariate_age,0.0611,0.0196,Autoencoder
-label_income,0.0875,0.1207,Autoencoder
-no_drift,0.0503,0.0066,Autoencoder
+concept_education,0.5149,0.0532,Classifier_RF
+covariate_age,0.909,0.0157,Classifier_RF
+label_income,0.6215,0.1219,Classifier_RF
+no_drift,0.5149,0.0046,Classifier_RF
+concept_education,0.0484,0.0532,Autoencoder
+covariate_age,0.0611,0.0157,Autoencoder
+label_income,0.0875,0.1219,Autoencoder
+no_drift,0.0503,0.0046,Autoencoder
